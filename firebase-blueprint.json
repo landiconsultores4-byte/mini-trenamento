@@ -1,0 +1,92 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Utilizadores do sistema SOS",
+      "type": "object",
+      "properties": {
+        "nome": { "type": "string", "description": "Nome completo" },
+        "telefone": { "type": "string", "description": "Número de telefone" },
+        "provincia": { "type": "string", "description": "Província de residência" },
+        "distrito": { "type": "string", "description": "Distrito de residência" },
+        "data_registo": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["ativo", "inativo"] },
+        "role": { "type": "string", "enum": ["user", "admin"] }
+      },
+      "required": ["nome", "telefone", "provincia", "status"]
+    },
+    "Alert": {
+      "title": "Alert",
+      "description": "Alertas SOS enviados pelos utilizadores",
+      "type": "object",
+      "properties": {
+        "user_id": { "type": "string", "description": "ID do utilizador que enviou o alerta" },
+        "tipo_modulo": { "type": "string", "enum": ["women", "men", "early_marriage", "personal"] },
+        "latitude": { "type": "number" },
+        "longitude": { "type": "number" },
+        "provincia": { "type": "string" },
+        "data_alerta": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["ativo", "resolvido"] }
+      },
+      "required": ["user_id", "tipo_modulo", "latitude", "longitude", "data_alerta", "status"]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "Denúncias enviadas pelos utilizadores",
+      "type": "object",
+      "properties": {
+        "user_id": { "type": "string" },
+        "descricao": { "type": "string" },
+        "tipo": { "type": "string", "enum": ["denuncia"] },
+        "data": { "type": "string", "format": "date-time" }
+      },
+      "required": ["user_id", "descricao", "tipo", "data"]
+    },
+    "MediaEvidence": {
+      "title": "MediaEvidence",
+      "description": "Evidências multimédia associadas a denúncias ou alertas",
+      "type": "object",
+      "properties": {
+        "report_id": { "type": "string" },
+        "tipo": { "type": "string", "enum": ["foto", "video", "audio"] },
+        "url": { "type": "string" },
+        "data_upload": { "type": "string", "format": "date-time" }
+      },
+      "required": ["report_id", "tipo", "url", "data_upload"]
+    },
+    "SystemLog": {
+      "title": "SystemLog",
+      "description": "Logs de auditoria do sistema",
+      "type": "object",
+      "properties": {
+        "user_admin": { "type": "string" },
+        "acao": { "type": "string" },
+        "ip": { "type": "string" },
+        "data": { "type": "string", "format": "date-time" }
+      },
+      "required": ["user_admin", "acao", "data"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Coleção de utilizadores"
+    },
+    "/alerts/{alertId}": {
+      "schema": "Alert",
+      "description": "Coleção de alertas SOS"
+    },
+    "/reports/{reportId}": {
+      "schema": "Report",
+      "description": "Coleção de denúncias"
+    },
+    "/media_evidence/{evidenceId}": {
+      "schema": "MediaEvidence",
+      "description": "Evidências multimédia"
+    },
+    "/system_logs/{logId}": {
+      "schema": "SystemLog",
+      "description": "Logs de auditoria"
+    }
+  }
+}

@@ -1,0 +1,96 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Fields: nome, telefone, provincia, distrito, data_registo, status, role
+    //
+    // Collection: alerts
+    // Fields: user_id, tipo_modulo, latitude, longitude, provincia, data_alerta, status
+    //
+    // Collection: reports
+    // Fields: user_id, descricao, tipo, data
+    //
+    // Collection: media_evidence
+    // Fields: report_id, tipo, url, data_upload
+    //
+    // Collection: system_logs
+    // Fields: user_admin, acao, ip, data
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         request.auth.token.email == "minitrenamento@gmail.com");
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidUser(data) {
+      return data.nome is string && data.nome.size() > 0 && data.nome.size() < 100 &&
+             data.telefone is string && data.telefone.size() >= 8 &&
+             data.provincia is string &&
+             data.status in ['ativo', 'inativo'] &&
+             data.role in ['user', 'admin'];
+    }
+
+    function isValidAlert(data) {
+      return data.user_id is string &&
+             data.tipo_modulo in ['women', 'men', 'early_marriage', 'personal'] &&
+             data.latitude is number &&
+             data.longitude is number &&
+             data.status in ['ativo', 'resolvido'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isValidUser(request.resource.data) && 
+                    (isOwner(userId) && request.resource.data.role == 'user' || isAdmin());
+      allow update: if isAuthenticated() && isValidUser(request.resource.data) && 
+                    ((isOwner(userId) && request.resource.data.role == resource.data.role) || isAdmin());
+    }
+
+    match /alerts/{alertId} {
+      allow read: if isAuthenticated() && (resource.data.user_id == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && isValidAlert(request.resource.data) && 
+                    request.resource.data.user_id == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /reports/{reportId} {
+      allow read: if isAuthenticated() && (resource.data.user_id == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated() && request.resource.data.user_id == request.auth.uid;
+      allow update: if isAdmin();
+    }
+
+    match /media_evidence/{evidenceId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+    }
+
+    match /system_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+    }
+  }
+}
